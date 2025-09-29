@@ -133,18 +133,28 @@ class REDLibrary:
 
             if platform.system() == 'Windows':
                 lib_name = "red_api.dll"
+                lib_path = resources_dir / lib_name
             else:
-                # For Linux, try multiple possible library names
+                # For Linux, use the actual versioned files that exist
+                # Check in order of preference: symlink, then versioned files
                 possible_names = ["libred_api.so", "libred_api.so.1", "libred_api.so.1.0"]
                 for lib_name in possible_names:
                     lib_path = resources_dir / lib_name
                     if lib_path.exists():
-                        return lib_path
+                        # Additional check: make sure it's not an empty or broken symlink
+                        try:
+                            file_size = lib_path.stat().st_size
+                            if file_size > 100:  # Valid library files should be much larger than 17 bytes
+                                logging.info(f"Found valid library: {lib_path} ({file_size} bytes)")
+                                return lib_path
+                            else:
+                                logging.warning(f"Library file too small: {lib_path} ({file_size} bytes)")
+                        except Exception as e:
+                            logging.warning(f"Could not check file size for {lib_path}: {e}")
+                            continue
 
                 logging.error(f"No valid library found in {resources_dir}. Tried: {possible_names}")
                 return None
-
-            lib_path = resources_dir / lib_name
 
             if not lib_path.exists():
                 logging.error(f"Library not found at {lib_path}")
