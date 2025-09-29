@@ -17,7 +17,7 @@ cd "$DEPLOY_DIR"
 # Handle git repository
 if [ -d ".git" ]; then
     echo "Updating existing repository..."
-    git pull origin master  # Fixed: changed from 'main' to 'master'
+    git pull origin master
 else
     echo "Cloning repository..."
     git clone https://github.com/kertser/ATL_calculator_backend.git .
@@ -29,22 +29,31 @@ docker-compose down --remove-orphans || true  # Stop existing containers
 docker-compose build --no-cache              # Rebuild image
 docker-compose up -d                          # Start containers
 
-# Wait for container to be ready
+# Wait for container to be ready with retry logic
 echo "Waiting for container to start..."
-sleep 5
+sleep 10  # Initial wait for container startup
 
 # Test if container is running
 if docker-compose ps | grep -q "Up"; then
     echo "✅ Container is running successfully"
 
-    # Test API health
-    if curl -f http://localhost:5000/health > /dev/null 2>&1; then
-        echo "✅ API health check passed"
-    else
-        echo "❌ API health check failed"
-        docker-compose logs
-        exit 1
-    fi
+    # Test API health with retries
+    echo "Testing API health (may take up to 30 seconds)..."
+    for i in {1..6}; do
+        if curl -f -s http://localhost:5000/health > /dev/null 2>&1; then
+            echo "✅ API health check passed"
+            break
+        else
+            if [ $i -eq 6 ]; then
+                echo "❌ API health check failed after 30 seconds"
+                docker-compose logs --tail=20
+                exit 1
+            else
+                echo "⏳ API not ready yet, waiting 5 more seconds... (attempt $i/6)"
+                sleep 5
+            fi
+        fi
+    done
 else
     echo "❌ Container failed to start"
     docker-compose logs
