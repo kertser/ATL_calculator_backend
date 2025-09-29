@@ -1,5 +1,5 @@
+import os
 from dataclasses import dataclass
-
 
 @dataclass
 class Config:
@@ -9,10 +9,10 @@ class Config:
     RESOURCES_Path = "resources"
     LOGS_Path = "logs"
 
-    # API Server configuration
-    API_HOST = "localhost"
-    API_PORT = 5000
-    API_DEBUG = True
+    # API Server configuration - Updated for Docker
+    API_HOST = os.getenv("API_HOST", "0.0.0.0")  # Listen on all interfaces in container
+    API_PORT = int(os.getenv("API_PORT", 5000))
+    API_DEBUG = os.getenv("API_DEBUG", "false").lower() == "true"  # Disable debug in production
 
     # API Endpoints
     CALCULATE_ENDPOINT = "/calculate"
