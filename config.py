@@ -22,7 +22,7 @@ class Config:
     DEFAULT_D1LOG = 18.0
 
     # Application types
-    APPLICATION_TYPES = ["Full Range", "Municipal", "Dechlorination"]
+    APPLICATION_TYPES = ["Full Range", "Municipal EPA", "Dechlorination"]
 
     # Position types
     POSITION_TYPES = ["Vertical", "Horizontal"]
