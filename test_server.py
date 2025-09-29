@@ -216,6 +216,10 @@ class APITester:
         """Test parameter ranges for different system types"""
         return self.session.get(f"{self.base_url}/system/RZ-104-12/ranges")
 
+    def test_supported_systems(self):
+        """Test getting supported systems list"""
+        return self.session.get(f"{self.base_url}/systems/supported")
+
     def test_invalid_endpoint(self):
         """Test accessing an invalid endpoint"""
         return self.session.get(f"{self.base_url}/nonexistent")
@@ -262,6 +266,9 @@ class APITester:
         self.run_test("Parameter Ranges - Valid System", self.test_parameter_ranges_valid_system, 200)
         self.run_test("Parameter Ranges - Invalid System", self.test_parameter_ranges_invalid_system, 404)
         self.run_test("Parameter Ranges - Different System", self.test_parameter_ranges_different_systems, 200)
+
+        # Supported systems test
+        self.run_test("Supported Systems", self.test_supported_systems, 200)
 
         # Invalid endpoint tests
         self.run_test("Invalid Endpoint", self.test_invalid_endpoint, 404)

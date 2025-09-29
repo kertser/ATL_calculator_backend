@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, field_validator
-from typing import Dict, Any, Optional, Union
+from typing import Dict, Any, Optional, Union, List
 import logging
 from contextlib import asynccontextmanager
 from calculator import REDLibrary
@@ -96,6 +96,10 @@ class HealthResponse(BaseModel):
 class ParameterRangesResponse(BaseModel):
     system_type: str
     ranges: Dict[str, Any]
+    status: str
+
+class SupportedSystemsResponse(BaseModel):
+    systems: Dict[str, List[str]]
     status: str
 
 
@@ -227,6 +231,36 @@ async def get_parameter_ranges(system_type: str):
         raise HTTPException(
             status_code=500,
             detail=f"Error getting parameter ranges: {str(e)}"
+        )
+
+@app.get("/systems/supported", response_model=SupportedSystemsResponse)
+async def get_supported_systems():
+    """Get list of supported systems grouped by series"""
+    try:
+        if calculator is None:
+            raise HTTPException(
+                status_code=500,
+                detail="Calculator not initialized"
+            )
+
+        systems = calculator.get_grouped_supported_systems()
+        if not systems:
+            raise HTTPException(
+                status_code=404,
+                detail="No supported systems found"
+            )
+
+        return SupportedSystemsResponse(
+            systems=systems,
+            status="success"
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error getting supported systems: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error getting supported systems: {str(e)}"
         )
 
 if __name__ == '__main__':
