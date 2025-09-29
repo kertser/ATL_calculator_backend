@@ -34,13 +34,17 @@ RUN echo "=== Checking resources directory ===" && \
 
 # Set up shared library environment
 RUN chmod +x resources/*.so* || true && \
-    # Create symlinks for the shared libraries to standard names
-    ln -sf libred_api.so.1 /app/resources/libred_api.so && \
-    ln -sf libjson-c.so.5 /app/resources/libjson-c.so && \
+    # Change to resources directory and create symlinks with relative paths
+    cd /app/resources && \
+    ln -sf libred_api.so.1 libred_api.so && \
+    ln -sf libjson-c.so.5 libjson-c.so && \
     # Verify symlinks
     echo "=== Checking symlinks ===" && \
     ls -la /app/resources/*.so && \
     file /app/resources/*.so && \
+    echo "=== Verifying symlink targets ===" && \
+    readlink /app/resources/libred_api.so && \
+    readlink /app/resources/libjson-c.so && \
     # Add the resources directory to the library path
     echo "/app/resources" > /etc/ld.so.conf.d/app-libs.conf && \
     ldconfig
