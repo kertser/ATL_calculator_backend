@@ -68,7 +68,7 @@ class APITester:
     def test_calculate_valid_request(self):
         """Test calculation with valid parameters"""
         payload = {
-            "Application": "Municipal",
+            "Application": "Municipal EPA",
             "Module": "RZ-104",
             "Model": "11",
             "Branch": "1",
@@ -135,7 +135,7 @@ class APITester:
     def test_calculate_missing_fields(self):
         """Test calculation with missing required fields"""
         payload = {
-            "Application": "Municipal",
+            "Application": "Municipal EPA",
             "Module": "RZ-104",
             # Missing required fields intentionally
             "Efficiency": 80.0,
@@ -171,7 +171,7 @@ class APITester:
     def test_calculate_out_of_range_values(self):
         """Test calculation with out-of-range values"""
         payload = {
-            "Application": "Municipal",
+            "Application": "Municipal EPA",
             "Module": "RZ-104",
             "Model": "11",
             "Branch": "1",
@@ -347,4 +347,5 @@ def main():
 
 
 if __name__ == "__main__":
+    # python test_server.py --host 127.0.0.1 --port 5000
     main()
