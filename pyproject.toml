@@ -9,17 +9,17 @@ dependencies = [
     "pydantic>=2.5.0"
 ]
 
+[dependency-groups]
+dev = [
+    "pytest>=7.0.0",
+    "httpx>=0.25.0"  # For testing FastAPI
+]
+
 [tool.hatch.build.targets.wheel]
 packages = ["."]
 include = [
     "*.py",
     "resources/**/*"
-]
-
-[tool.uv]
-dev-dependencies = [
-    "pytest>=7.0.0",
-    "httpx>=0.25.0"  # For testing FastAPI
 ]
 
 [build-system]

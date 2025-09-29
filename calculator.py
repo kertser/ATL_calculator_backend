@@ -101,7 +101,20 @@ class REDLibrary:
         try:
             base_dir = Path(__file__).parent
             resources_dir = base_dir / CONFIG.RESOURCES_Path
-            lib_name = "red_api.dll" if platform.system() == 'Windows' else "libred_api.so"
+
+            if platform.system() == 'Windows':
+                lib_name = "red_api.dll"
+            else:
+                # For Linux, try multiple possible library names
+                possible_names = ["libred_api.so", "libred_api.so.1", "libred_api.so.1.0"]
+                for lib_name in possible_names:
+                    lib_path = resources_dir / lib_name
+                    if lib_path.exists():
+                        return lib_path
+
+                logging.error(f"No valid library found in {resources_dir}. Tried: {possible_names}")
+                return None
+
             lib_path = resources_dir / lib_name
 
             if not lib_path.exists():
