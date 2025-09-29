@@ -9,6 +9,7 @@ RUN apt-get update && apt-get install -y \
     libffi-dev \
     libssl-dev \
     pkg-config \
+    file \
     && rm -rf /var/lib/apt/lists/*
 
 # Install UV
@@ -20,20 +21,32 @@ COPY pyproject.toml uv.lock ./
 # Install dependencies
 RUN uv sync --frozen --no-cache
 
-# Copy application code
+# Copy application code and resources
 COPY . .
+
+# Debug: Check what files we have
+RUN echo "=== Checking resources directory ===" && \
+    ls -la resources/ && \
+    echo "=== File types ===" && \
+    file resources/*.so* && \
+    echo "=== File sizes ===" && \
+    ls -lh resources/*.so*
 
 # Set up shared library environment
 RUN chmod +x resources/*.so* || true && \
     # Create symlinks for the shared libraries to standard names
-    ln -sf /app/resources/libred_api.so.1 /app/resources/libred_api.so && \
-    ln -sf /app/resources/libjson-c.so.5 /app/resources/libjson-c.so && \
+    ln -sf libred_api.so.1 /app/resources/libred_api.so && \
+    ln -sf libjson-c.so.5 /app/resources/libjson-c.so && \
+    # Verify symlinks
+    echo "=== Checking symlinks ===" && \
+    ls -la /app/resources/*.so && \
+    file /app/resources/*.so && \
     # Add the resources directory to the library path
     echo "/app/resources" > /etc/ld.so.conf.d/app-libs.conf && \
     ldconfig
 
 # Set environment variables for library loading
-ENV LD_LIBRARY_PATH="/app/resources:$LD_LIBRARY_PATH"
+ENV LD_LIBRARY_PATH="/app/resources"
 
 # Expose port
 EXPOSE 5000

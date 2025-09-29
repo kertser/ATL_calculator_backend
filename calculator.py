@@ -41,6 +41,21 @@ class REDLibrary:
             if lib_path is None:
                 return None
 
+            logging.info(f"Attempting to load library: {lib_path}")
+
+            # Check if file exists and is readable
+            if not lib_path.exists():
+                logging.error(f"Library file does not exist: {lib_path}")
+                return None
+
+            # Check file size and type
+            file_size = lib_path.stat().st_size
+            logging.info(f"Library file size: {file_size} bytes")
+
+            if file_size == 0:
+                logging.error(f"Library file is empty: {lib_path}")
+                return None
+
             if platform.system() == 'Windows':
                 resources_dir = str(lib_path.parent.absolute())
 
@@ -89,6 +104,20 @@ class REDLibrary:
                     os.chdir(original_dir)
 
             else:
+                # Linux/Unix library loading
+                logging.info(f"Loading Linux shared library: {lib_path}")
+
+                # Try to preload the JSON dependency
+                json_lib_path = lib_path.parent / "libjson-c.so"
+                if json_lib_path.exists():
+                    try:
+                        logging.info(f"Preloading JSON library: {json_lib_path}")
+                        self._json_lib = ctypes.CDLL(str(json_lib_path))
+                        logging.info("JSON library loaded successfully")
+                    except Exception as e:
+                        logging.warning(f"Could not preload JSON library: {e}")
+
+                # Load the main library
                 return ctypes.CDLL(str(lib_path))
 
         except Exception as e:
