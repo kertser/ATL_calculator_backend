@@ -6,21 +6,14 @@ A FastAPI-based REST API server for UV system calculations including Reduction E
 
 ### Prerequisites
 - Python 3.8+
-- UV package manager (recommended) or pip
+- UV package manager
 
 ### Installation & Running
 
 1. **Using UV (recommended):**
    ```bash
-   cd NewBackend
+   uv sync
    uv run python server.py
-   ```
-
-2. **Using pip:**
-   ```bash
-   cd NewBackend
-   pip install -r requirements.txt (missing at this point)
-   python server.py
    ```
 
 The server will start on `http://localhost:5000` by default.
