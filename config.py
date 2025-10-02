@@ -33,6 +33,9 @@ class Config:
     # Flow units
     FLOW_UNITS = ["m3/h", "US GPM"]
 
+    mongo_url = os.getenv("MONGO_URL", "mongodb://admin:atlantium@83.229.70.50:27017/admin?authSource=admin")
+    db_name = "CalcUsers"
+
 
 # Create global config instance
 CONFIG = Config()

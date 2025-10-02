@@ -5,6 +5,8 @@ from typing import Dict, Any, Optional, Union, List
 import logging
 from contextlib import asynccontextmanager
 from calculator import REDLibrary
+from pymongo import MongoClient
+from datetime import datetime
 from config import CONFIG
 
 # Configure logging
@@ -102,6 +104,15 @@ class SupportedSystemsResponse(BaseModel):
     systems: Dict[str, List[str]]
     status: str
 
+class LoginRequest(BaseModel):
+    username: str = Field(..., description="Username")
+    password: str = Field(..., description="Password")
+
+class LoginResponse(BaseModel):
+    status: str
+    message: str
+    role: Optional[str] = None
+    calculator_type: Optional[str] = None
 
 # Initialize FastAPI app with lifespan
 app = FastAPI(
@@ -123,6 +134,16 @@ app.add_middleware(
 def convert_to_system_type(module: str, model: str) -> str:
     """Convert Module and Model to System Type format"""
     return f"{module}-{model}"
+
+# MongoDB connection function
+def get_mongo_client():
+    """Get MongoDB client connection"""
+    try:
+        client = MongoClient(CONFIG.mongo_url)
+        return client
+    except Exception as e:
+        logging.error(f"Failed to connect to MongoDB: {e}")
+        return None
 
 @app.get("/health", response_model=HealthResponse)
 async def health_check():
@@ -262,6 +283,77 @@ async def get_supported_systems():
             status_code=500,
             detail=f"Error getting supported systems: {str(e)}"
         )
+
+# MongoDB Login endpoint
+@app.post("/login", response_model=LoginResponse)
+async def login(request: LoginRequest):
+    """User authentication endpoint"""
+    client = None
+    try:
+        # Connect to MongoDB
+        client = get_mongo_client()
+        if client is None:
+            raise HTTPException(
+                status_code=500,
+                detail="Database connection failed"
+            )
+
+        db = client.get_database(CONFIG.db_name)
+        records = db.Calculator
+
+        # Find user by username
+        user = list(records.find({'UserName': request.username}))
+
+        if not user:
+            return LoginResponse(
+                status="error",
+                message="Wrong Login Name"
+            )
+
+        user_data = user[0]
+        stored_password = user_data.get('Password')
+        expiration_date = user_data.get('Expiration Date')
+        role = user_data.get('Role')
+
+        # Check password
+        if request.password != stored_password:
+            return LoginResponse(
+                status="error",
+                message="Wrong Password"
+            )
+
+        # Check expiration date
+        today = datetime.now().strftime("%d-%b-%Y")
+        today_date = datetime.strptime(today, "%d-%b-%Y").date()
+        exp_date = datetime.strptime(expiration_date, "%d-%b-%Y").date()
+
+        if today_date > exp_date:
+            return LoginResponse(
+                status="error",
+                message="Password Date Expired"
+            )
+
+        # Determine calculator type based on role
+        calculator_type = "Marketing" if role == "Marketing" else "Developer"
+
+        return LoginResponse(
+            status="success",
+            message="Login successful",
+            role=role,
+            calculator_type=calculator_type
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error in login endpoint: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Internal server error: {str(e)}"
+        )
+    finally:
+        if client:
+            client.close()
 
 if __name__ == '__main__':
     import uvicorn
