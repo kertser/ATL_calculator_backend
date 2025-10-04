@@ -145,7 +145,7 @@ def get_mongo_client():
         logging.error(f"Failed to connect to MongoDB: {e}")
         return None
 
-@app.get("/health", response_model=HealthResponse)
+@app.get(CONFIG.HEALTH_ENDPOINT, response_model=HealthResponse)
 async def health_check():
     """Health check endpoint"""
     return HealthResponse(

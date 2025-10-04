@@ -1,5 +1,5 @@
 * Need to add webhooks or github actions for CI/CD
-* Need to add tests
 * Loading pathogens from Excel file
-* Pressure Drop calculation
+* Pressure Drop calculation - add endpoint
+* Need to add secrets for database connection
 
