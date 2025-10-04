@@ -115,6 +115,30 @@ else
     git clone https://github.com/kertser/ATL_calculator_backend.git .
 fi
 
+#--------------------------------------
+# Kill existing container safely (prevents permission errors)
+#--------------------------------------
+echo "🧹 Checking for existing container 'uv-calculator-api'..."
+EXISTING_PID=$(sudo docker inspect -f '{{.State.Pid}}' uv-calculator-api 2>/dev/null || true)
+
+if [ -n "$EXISTING_PID" ] && [ "$EXISTING_PID" != "0" ]; then
+    echo "⚠️ Found running container (PID: $EXISTING_PID). Attempting graceful stop..."
+    docker stop uv-calculator-api || true
+    sleep 3
+
+    if ps -p "$EXISTING_PID" > /dev/null 2>&1; then
+        echo "⛔ Container did not stop gracefully — force killing PID $EXISTING_PID"
+        sudo kill -9 "$EXISTING_PID" || true
+    else
+        echo "✅ Container stopped gracefully."
+    fi
+else
+    echo "✅ No running 'uv-calculator-api' container detected."
+fi
+
+#--------------------------------------
+# Continue normal rebuild and startup
+#--------------------------------------
 echo "🐳 Rebuilding and starting Docker containers..."
 docker-compose down --remove-orphans || true
 docker-compose build --pull
