@@ -1,6 +1,5 @@
 * Need to add webhooks or github actions for CI/CD
 * Need to add tests
-* Need to implement user/password database connector (MongoDB)
 * Loading pathogens from Excel file
 * Pressure Drop calculation
 

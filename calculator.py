@@ -309,6 +309,11 @@ class REDLibrary:
             limits = system_specs['operational_limits']
 
             return {
+                "drive": {
+                    "min": limits['drive']['min'],
+                    "max": limits['drive']['max'],
+                    "unit": limits['drive']['unit']
+                },
                 "flow": {
                     "min": limits['flow']['min'],
                     "max": limits['flow']['max'],
@@ -318,6 +323,11 @@ class REDLibrary:
                     "min": limits['uvt']['min'],
                     "max": limits['uvt']['max'],
                     "unit": limits['uvt']['unit']
+                },
+                "efficiency": {
+                    "min": limits['efficiency']['min'],
+                    "max": limits['efficiency']['max'],
+                    "unit": limits['efficiency']['unit']
                 }
             }
         except Exception as e:
