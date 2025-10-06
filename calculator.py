@@ -606,6 +606,127 @@ class REDLibrary:
                 }
             }
 
+    def calculate_pressure_drop(self, system_type: str, flow: float) -> Optional[Dict]:
+        """Calculate pressure drop for a given system type and flow rate
+
+        Args:
+            system_type: The UV system type identifier
+            flow: Flow rate in m³/h
+
+        Returns:
+            Dictionary containing pressure drop calculation results or error information
+        """
+        try:
+            # Validate system type
+            if system_type not in self.supported_systems:
+                return {
+                    "status": "error",
+                    "error": {
+                        "type": "system",
+                        "message": f"System type '{system_type}' not found"
+                    },
+                    "parameters": {
+                        "system_type": system_type,
+                        "flow": flow
+                    }
+                }
+
+            # Load system specifications
+            specs = self._load_system_specifications()
+            if not specs or 'supported_systems' not in specs:
+                return {
+                    "status": "error",
+                    "error": {
+                        "type": "system",
+                        "message": "Could not load system specifications"
+                    },
+                    "parameters": {
+                        "system_type": system_type,
+                        "flow": flow
+                    }
+                }
+
+            # Get system specs
+            system_specs = specs['supported_systems'].get(system_type)
+            if not system_specs:
+                return {
+                    "status": "error",
+                    "error": {
+                        "type": "system",
+                        "message": f"No specifications found for system {system_type}"
+                    },
+                    "parameters": {
+                        "system_type": system_type,
+                        "flow": flow
+                    }
+                }
+
+            # Get pressure drop coefficients
+            pressure_drop_data = system_specs.get('pressure_drop')
+            if not pressure_drop_data:
+                return {
+                    "status": "error",
+                    "error": {
+                        "type": "system",
+                        "message": f"No pressure drop data found for system {system_type}"
+                    },
+                    "parameters": {
+                        "system_type": system_type,
+                        "flow": flow
+                    }
+                }
+
+            # Extract coefficients
+            cflow_1 = pressure_drop_data.get('Cflow_1', 0)
+            cflow_2 = pressure_drop_data.get('Cflow_2', 0)
+            unit = pressure_drop_data.get('unit', 'cmH2O')
+
+            # Validate flow is positive
+            if flow <= 0:
+                return {
+                    "status": "error",
+                    "error": {
+                        "type": "validation",
+                        "message": "Flow rate must be greater than 0"
+                    },
+                    "parameters": {
+                        "system_type": system_type,
+                        "flow": flow
+                    }
+                }
+
+            # Calculate pressure drop: dP = Cflow_1 * flow^2 + Cflow_2 * flow
+            pressure_drop = cflow_1 * (flow ** 2) + cflow_2 * flow
+
+            return {
+                "status": "success",
+                "result": round(pressure_drop, 2),
+                "unit": unit,
+                "details": {
+                    "system_type": system_type,
+                    "flow": flow,
+                    "flow_unit": "m³/h",
+                    "coefficients": {
+                        "Cflow_1": cflow_1,
+                        "Cflow_2": cflow_2
+                    }
+                }
+            }
+
+        except Exception as e:
+            logging.error(f"Error calculating pressure drop: {e}")
+            return {
+                "status": "error",
+                "error": {
+                    "type": "system",
+                    "message": f"Calculation error: {str(e)}"
+                },
+                "parameters": {
+                    "system_type": system_type,
+                    "flow": flow
+                }
+            }
+
 
 def main():
     try:
@@ -632,6 +753,13 @@ def main():
             efficiency_settings={"all_lamps": 80.0}
         )
         logging.info(f"RED Calculation Result: {result}")
+
+        # Calculate pressure drop for a sample system
+        pressure_drop_result = calculator.calculate_pressure_drop(
+            system_type="RZ-104-11",
+            flow=100.0
+        )
+        logging.info(f"Pressure Drop Calculation Result: {pressure_drop_result}")
 
     except Exception as e:
         logging.error(f"Error in main: {e}")

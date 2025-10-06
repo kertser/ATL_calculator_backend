@@ -17,6 +17,7 @@ class Config:
     # API Endpoints
     CALCULATE_ENDPOINT = "/calculate"
     HEALTH_ENDPOINT = "/health"
+    PRESSURE_DROP_ENDPOINT = "/pressure-drop"
 
     # Default values for calculations
     DEFAULT_UVT215 = -1

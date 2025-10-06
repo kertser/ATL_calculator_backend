@@ -2,4 +2,7 @@
 * Loading pathogens from Excel file
 * Pressure Drop calculation - add endpoint
 * Need to add secrets for database connection
-
+* Need to add new calculators:
+- EP600
+- EP900
+- WW

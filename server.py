@@ -114,6 +114,16 @@ class LoginResponse(BaseModel):
     role: Optional[str] = None
     calculator_type: Optional[str] = None
 
+class PressureDropRequest(BaseModel):
+    system_type: str = Field(..., description="System type")
+    flow_rate: float = Field(..., gt=0, description="Flow rate")
+
+class PressureDropResponse(BaseModel):
+    status: str
+    pressure_drop: float = Field(..., description="Calculated pressure drop")
+    unit: str = Field(..., description="Unit of the pressure drop")
+    details: Optional[Dict[str, Any]] = None
+
 # Initialize FastAPI app with lifespan
 app = FastAPI(
     title="UV System Calculator API",
@@ -282,6 +292,47 @@ async def get_supported_systems():
         raise HTTPException(
             status_code=500,
             detail=f"Error getting supported systems: {str(e)}"
+        )
+
+@app.post(CONFIG.PRESSURE_DROP_ENDPOINT, response_model=PressureDropResponse)
+async def calculate_pressure_drop(request: PressureDropRequest):
+    """Calculate pressure drop for a given system type and flow rate"""
+    try:
+        if calculator is None:
+            raise HTTPException(
+                status_code=500,
+                detail="Calculator not initialized"
+            )
+
+        result = calculator.calculate_pressure_drop(
+            system_type=request.system_type,
+            flow=request.flow_rate
+        )
+
+        if not result or result.get("status") != "success":
+            error_info = result.get("error", {}) if result else {}
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "error": error_info.get("message", "Pressure drop calculation failed"),
+                    "details": error_info
+                }
+            )
+
+        return PressureDropResponse(
+            status="success",
+            pressure_drop=result["result"],
+            unit=result["unit"],
+            details=result.get("details", {})
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error in pressure drop endpoint: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Internal server error: {str(e)}"
         )
 
 # MongoDB Login endpoint
