@@ -84,10 +84,10 @@ class CalculationRequest(BaseModel):
 
 class CalculationResponse(BaseModel):
     Reduction_Equivalent_Dose: float = Field(..., alias="Reduction Equivalent Dose")
-    Head_Loss: Union[str, float] = Field(..., alias="Head Loss")
-    Maximum_Electrical_Power: Union[str, float] = Field(..., alias="Maximum Electrical Power")
-    Average_Lamp_Power_Consumption: Union[str, float] = Field(..., alias="Average Lamp Power Consumption")
-    Expected_LI: Union[str, float] = Field(..., alias="Expected LI")
+    Pressure_Drop: float = Field(..., alias="Pressure Drop")
+    Maximum_Electrical_Power: float = Field(..., alias="Maximum Electrical Power")
+    Average_Lamp_Power_Consumption: float = Field(..., alias="Average Lamp Power Consumption")
+    Expected_LI: int = Field(..., alias="Expected LI")
     status: str
     calculation_details: Optional[Dict[str, Any]] = None
 
@@ -211,14 +211,41 @@ async def calculate(request: CalculationRequest):
                 }
             )
 
+        # Calculate pressure drop
+        pressure_drop_result = calculator.calculate_pressure_drop(
+            system_type=system_type,
+            flow=flow_rate
+        )
+
+        pressure_drop = -1.0
+        if pressure_drop_result and pressure_drop_result.get("status") == "success":
+            pressure_drop = pressure_drop_result["result"]
+
+        # Calculate Maximum Electrical Power = lamp_power * number_of_lamps
+        max_electrical_power = -1.0
+        details = red_result.get("details", {})
+        lamp_power = details.get("lamp_power_watts", -1.0)
+        n_lamps = details.get("number_of_lamps", 0)
+        if lamp_power > 0 and n_lamps > 0:
+            max_electrical_power = lamp_power * n_lamps
+
+        # Average Lamp Power Consumption is just lamp_power
+        avg_lamp_power_consumption = lamp_power if lamp_power > 0 else -1.0
+
+        # Expected LI (Log Inactivation) = RED / D1Log (rounded to integer)
+        expected_li = -1
+        red_value = red_result.get("result", 0)
+        if red_value > 0 and d1_log > 0:
+            expected_li = round(red_value / d1_log)
+
         # Prepare response
         return CalculationResponse(
             **{
                 "Reduction Equivalent Dose": red_result["result"],
-                "Head Loss": "TBD",  # To be implemented later
-                "Maximum Electrical Power": "TBD",  # To be implemented later
-                "Average Lamp Power Consumption": "TBD",  # To be implemented later
-                "Expected LI": "TBD",  # To be implemented later
+                "Pressure Drop": pressure_drop,
+                "Maximum Electrical Power": max_electrical_power,
+                "Average Lamp Power Consumption": avg_lamp_power_consumption,
+                "Expected LI": expected_li,
                 "status": "success",
                 "calculation_details": red_result.get("details", {})
             }
@@ -336,7 +363,7 @@ async def calculate_pressure_drop(request: PressureDropRequest):
         )
 
 # MongoDB Login endpoint
-@app.post("/login", response_model=LoginResponse)
+@app.post(CONFIG.LOGIN_ENDPOINT, response_model=LoginResponse)
 async def login(request: LoginRequest):
     """User authentication endpoint"""
     client = None

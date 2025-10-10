@@ -3,6 +3,12 @@ Test script for the UV System Calculator API server
 Tests all endpoints with various scenarios including success and error cases
 """
 
+import sys
+from pathlib import Path
+
+# Add parent directory to path to import config
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
 import requests
 import json
 import time
@@ -45,6 +51,15 @@ class APITester:
 
             if success:
                 logging.info(f"✅ {test_name} - PASSED ({duration:.3f}s)")
+                # Log response data for successful calculation tests
+                if "calculate" in test_name.lower() and response.status_code == 200:
+                    data = result['response_data']
+                    if isinstance(data, dict):
+                        logging.info(f"   RED: {data.get('Reduction Equivalent Dose', 'N/A')}")
+                        logging.info(f"   Pressure Drop: {data.get('Pressure Drop', 'N/A')}")
+                        logging.info(f"   Max Electrical Power: {data.get('Maximum Electrical Power', 'N/A')}")
+                        logging.info(f"   Avg Lamp Power: {data.get('Average Lamp Power Consumption', 'N/A')}")
+                        logging.info(f"   Expected LI: {data.get('Expected LI', 'N/A')}")
             else:
                 logging.error(f"❌ {test_name} - FAILED (Expected {expected_status}, got {response.status_code})")
                 logging.error(f"Response: {result['response_data']}")
@@ -220,6 +235,54 @@ class APITester:
         """Test getting supported systems list"""
         return self.session.get(f"{self.base_url}/systems/supported")
 
+    def test_pressure_drop_valid_request(self):
+        """Test pressure drop calculation with valid parameters"""
+        payload = {
+            "system_type": "RZ-104-11",
+            "flow_rate": 100.0
+        }
+        return self.session.post(
+            f"{self.base_url}/pressure-drop",
+            json=payload,
+            headers={"Content-Type": "application/json"}
+        )
+
+    def test_pressure_drop_different_system(self):
+        """Test pressure drop calculation for different system"""
+        payload = {
+            "system_type": "RZ-104-12",
+            "flow_rate": 150.0
+        }
+        return self.session.post(
+            f"{self.base_url}/pressure-drop",
+            json=payload,
+            headers={"Content-Type": "application/json"}
+        )
+
+    def test_pressure_drop_invalid_system(self):
+        """Test pressure drop calculation with invalid system"""
+        payload = {
+            "system_type": "INVALID-SYSTEM",
+            "flow_rate": 100.0
+        }
+        return self.session.post(
+            f"{self.base_url}/pressure-drop",
+            json=payload,
+            headers={"Content-Type": "application/json"}
+        )
+
+    def test_pressure_drop_negative_flow(self):
+        """Test pressure drop calculation with negative flow rate"""
+        payload = {
+            "system_type": "RZ-104-11",
+            "flow_rate": -50.0
+        }
+        return self.session.post(
+            f"{self.base_url}/pressure-drop",
+            json=payload,
+            headers={"Content-Type": "application/json"}
+        )
+
     def test_invalid_endpoint(self):
         """Test accessing an invalid endpoint"""
         return self.session.get(f"{self.base_url}/nonexistent")
@@ -248,14 +311,23 @@ class APITester:
             return
 
         # Health check tests
+        logging.info("\n" + "=" * 80)
+        logging.info("HEALTH CHECK TESTS")
+        logging.info("=" * 80)
         self.run_test("Health Check", self.test_health_check, 200)
 
         # Valid calculation tests
+        logging.info("\n" + "=" * 80)
+        logging.info("CALCULATION TESTS - VALID REQUESTS")
+        logging.info("=" * 80)
         self.run_test("Calculate - Valid Request", self.test_calculate_valid_request, 200)
         self.run_test("Calculate - Minimal Request", self.test_calculate_minimal_request, 200)
         self.run_test("Calculate - With Optional Parameters", self.test_calculate_with_optional_params, 200)
 
         # Error case tests
+        logging.info("\n" + "=" * 80)
+        logging.info("CALCULATION TESTS - ERROR CASES")
+        logging.info("=" * 80)
         self.run_test("Calculate - Missing Fields", self.test_calculate_missing_fields, 422)
         self.run_test("Calculate - Invalid Application", self.test_calculate_invalid_application, 422)
         self.run_test("Calculate - Out of Range Values", self.test_calculate_out_of_range_values, 422)
@@ -263,14 +335,32 @@ class APITester:
         self.run_test("Calculate - Empty Request", self.test_calculate_empty_request, 422)
 
         # Parameter ranges tests
+        logging.info("\n" + "=" * 80)
+        logging.info("PARAMETER RANGES TESTS")
+        logging.info("=" * 80)
         self.run_test("Parameter Ranges - Valid System", self.test_parameter_ranges_valid_system, 200)
         self.run_test("Parameter Ranges - Invalid System", self.test_parameter_ranges_invalid_system, 404)
         self.run_test("Parameter Ranges - Different System", self.test_parameter_ranges_different_systems, 200)
 
         # Supported systems test
+        logging.info("\n" + "=" * 80)
+        logging.info("SUPPORTED SYSTEMS TESTS")
+        logging.info("=" * 80)
         self.run_test("Supported Systems", self.test_supported_systems, 200)
 
+        # Pressure drop tests
+        logging.info("\n" + "=" * 80)
+        logging.info("PRESSURE DROP TESTS")
+        logging.info("=" * 80)
+        self.run_test("Pressure Drop - Valid Request", self.test_pressure_drop_valid_request, 200)
+        self.run_test("Pressure Drop - Different System", self.test_pressure_drop_different_system, 200)
+        self.run_test("Pressure Drop - Invalid System", self.test_pressure_drop_invalid_system, 400)
+        self.run_test("Pressure Drop - Negative Flow", self.test_pressure_drop_negative_flow, 422)
+
         # Invalid endpoint tests
+        logging.info("\n" + "=" * 80)
+        logging.info("INVALID ENDPOINT TESTS")
+        logging.info("=" * 80)
         self.run_test("Invalid Endpoint", self.test_invalid_endpoint, 404)
         self.run_test("Wrong HTTP Method", self.test_wrong_http_method, 405)
 
@@ -278,8 +368,8 @@ class APITester:
 
     def print_summary(self):
         """Print test summary"""
-        logging.info("=" * 80)
-        logging.info("Test Summary")
+        logging.info("\n" + "=" * 80)
+        logging.info("TEST SUMMARY")
         logging.info("=" * 80)
 
         total_tests = len(self.test_results)
@@ -321,7 +411,7 @@ class APITester:
                     },
                     "results": self.test_results
                 }, f, indent=2)
-            logging.info(f"Detailed results saved to {filename}")
+            logging.info(f"\nDetailed results saved to {filename}")
         except Exception as e:
             logging.error(f"Failed to save results: {e}")
 

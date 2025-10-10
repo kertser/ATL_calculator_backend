@@ -8,7 +8,8 @@ dependencies = [
     "uvicorn",
     "pydantic>=2.5.0",
     "pymongo",
-    "requests"
+    "requests",
+    "python-dotenv>=1.0.0"
 ]
 
 [dependency-groups]
