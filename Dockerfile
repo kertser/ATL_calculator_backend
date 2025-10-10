@@ -42,7 +42,10 @@ COPY . .
 
 # Copy required native library
 RUN cp "$(find /lib/x86_64-linux-gnu -name 'libjson-c.so*' | grep -E 'libjson-c\.so\.[0-9]+$')" /app/resources/libjson-c.so.5 && \
-    chmod +x /app/resources/libjson-c.so.5
+    chmod 644 /app/resources/libjson-c.so.5
+
+# Create logs directory
+RUN mkdir -p /app/logs
 
 EXPOSE 5000
 

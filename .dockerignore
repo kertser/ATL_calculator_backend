@@ -1,0 +1,50 @@
+# Don't copy these into the Docker image
+
+# Environment files (sensitive data - should be provided at runtime)
+.env
+.env.*
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# Git
+.git/
+.gitignore
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Logs (will be mounted as volume)
+logs/
+*.log
+
+# Tests
+tests/
+*.pytest_cache/
+
+# Documentation
+README.md
+TODO
+
+# Deployment scripts
+deploy_update.sh
+status.sh
+
+# Docker files themselves
+Dockerfile
+docker-compose.yml
+.dockerignore
+

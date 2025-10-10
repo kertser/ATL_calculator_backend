@@ -149,7 +149,7 @@ def convert_to_system_type(module: str, model: str) -> str:
 def get_mongo_client():
     """Get MongoDB client connection"""
     try:
-        client = MongoClient(CONFIG.mongo_url)
+        client = MongoClient(CONFIG.mongo_uri)
         return client
     except Exception as e:
         logging.error(f"Failed to connect to MongoDB: {e}")
@@ -349,8 +349,8 @@ async def login(request: LoginRequest):
                 detail="Database connection failed"
             )
 
-        db = client.get_database(CONFIG.db_name)
-        records = db.Calculator
+        db = client.get_database(CONFIG.mongo_db)
+        records = db[CONFIG.mongo_collection]
 
         # Find user by username
         user = list(records.find({'UserName': request.username}))
@@ -366,7 +366,8 @@ async def login(request: LoginRequest):
         expiration_date = user_data.get('Expiration Date')
         role = user_data.get('Role')
 
-        # Check password
+        # SECURITY WARNING: Plain text password comparison
+        # TODO: Implement proper password hashing (bcrypt, argon2, etc.)
         if request.password != stored_password:
             return LoginResponse(
                 status="error",

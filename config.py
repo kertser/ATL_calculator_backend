@@ -11,7 +11,7 @@ class Config:
 
     # API Server configuration - Updated for Docker
     API_HOST = os.getenv("API_HOST", "0.0.0.0")  # Listen on all interfaces in container
-    API_PORT = int(os.getenv("API_PORT", 5000))
+    API_PORT = int(os.getenv("API_PORT", "5000"))
     API_DEBUG = os.getenv("API_DEBUG", "false").lower() == "true"  # Disable debug in production
 
     # API Endpoints
@@ -35,8 +35,10 @@ class Config:
     # Flow units
     FLOW_UNITS = ["m3/h", "US GPM"]
 
-    mongo_url = os.getenv("MONGO_URL", "mongodb://admin:atlantium@83.229.70.50:27017/admin?authSource=admin")
-    db_name = "CalcUsers"
+    # MongoDB configuration - No sensitive defaults, must be set via environment
+    mongo_uri = os.getenv("MONGO_URI")
+    mongo_db = os.getenv("MONGO_DB", "CalcUsers")
+    mongo_collection = os.getenv("MONGO_COLLECTION", "Calculator")
 
 
 # Create global config instance
