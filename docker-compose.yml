@@ -6,8 +6,6 @@ services:
     container_name: uv-calculator-api
     restart: unless-stopped
     network_mode: "host"
-    ports:
-      - "5000:5000"
     environment:
       - API_DEBUG=false
       - API_HOST=0.0.0.0
