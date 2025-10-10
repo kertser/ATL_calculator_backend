@@ -23,7 +23,9 @@ RUN set -eux; \
         pkg-config \
         libjson-c5 \
         patchelf \
-        curl; \
+        curl \
+        iputils-ping \
+        netcat-openbsd; \
     rm -rf /var/lib/apt/lists/*
 
 # Install uv package manager
