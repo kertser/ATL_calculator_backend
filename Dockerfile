@@ -12,28 +12,39 @@ ENV DEBIAN_FRONTEND=noninteractive \
     PATH="/root/.local/bin:$PATH"
 
 # ------------------------------------------------------
-# Install base system packages and Python build deps
+# Use a reliable Debian mirror (optional, Israel mirror)
+# ------------------------------------------------------
+RUN sed -i 's|deb.debian.org|mirror.isoc.org.il|g' /etc/apt/sources.list
+
+# ------------------------------------------------------
+# Install system dependencies safely and reliably
 # ------------------------------------------------------
 RUN set -eux; \
-    apt-get update; \
+    rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*.deb /tmp/*; \
+    apt-get clean; \
+    apt-get update -o Acquire::Retries=5 -o Acquire::CompressionTypes::Order::=gz; \
     apt-get install -y --no-install-recommends \
         gcc libc6-dev libffi-dev libssl-dev pkg-config \
         libjson-c5 patchelf curl; \
-    rm -rf /var/lib/apt/lists/*
+    rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*.deb
 
 # ------------------------------------------------------
-# Install uv (build tool / dependency resolver)
+# Install uv (Python dependency manager)
 # ------------------------------------------------------
 RUN pip install --no-cache-dir uv==0.4.24
 
 # ------------------------------------------------------
-# Copy dependency files and install Python deps
+# Copy project files
 # ------------------------------------------------------
 COPY pyproject.toml uv.lock ./
+
+# ------------------------------------------------------
+# Install Python dependencies using uv
+# ------------------------------------------------------
 RUN uv sync --frozen --no-cache
 
 # ------------------------------------------------------
-# Copy the application code
+# Copy the full application
 # ------------------------------------------------------
 COPY . .
 
