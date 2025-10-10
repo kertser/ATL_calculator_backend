@@ -14,7 +14,11 @@ ENV DEBIAN_FRONTEND=noninteractive \
 # ------------------------------------------------------
 # Use a reliable Debian mirror (optional, Israel mirror)
 # ------------------------------------------------------
-RUN sed -i 's|deb.debian.org|mirror.isoc.org.il|g' /etc/apt/sources.list
+RUN if [ -f /etc/apt/sources.list.d/debian.sources ]; then \
+        sed -i 's|deb.debian.org|mirror.isoc.org.il|g' /etc/apt/sources.list.d/debian.sources; \
+    elif [ -f /etc/apt/sources.list ]; then \
+        sed -i 's|deb.debian.org|mirror.isoc.org.il|g' /etc/apt/sources.list; \
+    fi
 
 # ------------------------------------------------------
 # Install system dependencies safely and reliably
