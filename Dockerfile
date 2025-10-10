@@ -16,11 +16,13 @@ RUN apt-get update && apt-get install -y \
 # Install UV
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
 
+# ✅ Force uv to use system Python (3.11)
+ENV UV_PYTHON_PREFERENCE=system
+
 # Copy dependency files first for better caching
 COPY pyproject.toml uv.lock ./
 
 # Install dependencies
-ENV UV_PYTHON_PREFERENCE=system
 RUN uv sync --frozen
 
 # Copy application code and resources
