@@ -1,54 +1,39 @@
-FROM python:3.11-slim
+# -------- Stage: Base Python image --------
+FROM python:3.11-slim AS base
 
 WORKDIR /app
+ENV DEBIAN_FRONTEND=noninteractive
 
-# Install system dependencies for native libraries
+# Install build/system dependencies
 RUN apt-get update && apt-get install -y \
-    gcc \
-    libc6-dev \
-    libffi-dev \
-    libssl-dev \
-    pkg-config \
-    libjson-c5 \
-    patchelf \
+    gcc libc6-dev libffi-dev libssl-dev pkg-config libjson-c5 patchelf \
     && rm -rf /var/lib/apt/lists/*
 
-# Install UV
+# ----------------------------------------------------------
+# Ensure uv uses system Python (not CPython 3.14)
+# ----------------------------------------------------------
+ENV UV_PYTHON_PREFERENCE=system \
+    UV_NO_DOWNLOADS=1 \
+    PYO3_USE_ABI3_FORWARD_COMPATIBILITY=1 \
+    PATH="/root/.local/bin:$PATH"
+
+# Copy uv binaries from the official image
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
 
-# ✅ Force uv to use system Python (3.11)
-ENV UV_PYTHON_PREFERENCE=system
-
-# Copy dependency files first for better caching
+# Copy dependency definitions first (for layer caching)
 COPY pyproject.toml uv.lock ./
 
-# Install dependencies
-RUN uv sync --frozen
+# Install dependencies into virtual environment
+RUN uv sync --frozen --no-cache
 
-# Copy application code and resources
+# Copy application source and resources
 COPY . .
 
-# Set up shared library environment using the system libjson-c and fix library paths
+# Copy required shared library
 RUN cp $(find /lib/x86_64-linux-gnu -name "libjson-c.so*" | grep -E "libjson-c\.so\.[0-9]+$") /app/resources/libjson-c.so.5 && \
-    cd /app/resources && \
-    chmod +x *.so* && \
-    # Create proper symlinks for libraries
-    if [ -f "libred_api.so.1.0" ]; then \
-        patchelf --set-rpath '\$ORIGIN' libred_api.so.1.0 && \
-        ln -sf libred_api.so.1.0 libred_api.so && \
-        ln -sf libred_api.so.1.0 libred_api.so.1; \
-    elif [ -f "libred_api.so.1" ]; then \
-        patchelf --set-rpath '\$ORIGIN' libred_api.so.1 && \
-        ln -sf libred_api.so.1 libred_api.so; \
-    fi && \
-    # Create symlink for JSON library
-    ln -sf libjson-c.so.5 libjson-c.so
+    cd /app/resources && chmod +x libjson-c.so.5
 
-# Set environment variables for library loading
-ENV LD_LIBRARY_PATH="/app/resources"
-
-# Expose port
 EXPOSE 5000
 
-# Run the application
+# Default command: run FastAPI app via uv
 CMD ["uv", "run", "python", "server.py"]
